@@ -1,8 +1,9 @@
 CREATE TABLE IF NOT EXISTS jobs (
-  position text NOT NULL,
-  organization text NOT NULL,
-  url text,
-  description text,
-  email text NOT NULL,
-  published_at timestamp DEFAULT current_timestamp
+  id SERIAL PRIMARY KEY,
+  position TEXT NOT NULL,
+  organization TEXT NOT NULL,
+  url TEXT,
+  description TEXT,
+  email TEXT NOT NULL,
+  published_at TIMESTAMP DEFAULT current_timestamp
 );
