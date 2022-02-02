@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: jobs
+      POSTGRES_DATABASE: jobs
+      POSTGRES_PASSWORD: supsupsup
+    volumes:
+      - devict-jobs-pgdata:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+
+  app:
+    build:
+      context: .
+    working_dir: /app
+    environment:
+      DATABASE_URL: "postgres://jobs:supsupsup@db:5432/jobs?sslmode=disable"
+    volumes:
+      - .:/app
+    ports:
+      - 8080:8080
+
+volumes:
+  devict-jobs-pgdata:
