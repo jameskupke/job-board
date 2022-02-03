@@ -1,0 +1,33 @@
+{{ template "base" . }}
+{{ define "content" }}
+  <form method="post" action="/jobs">
+    <!-- TODO: csrf -->
+    <label class="block">
+      <span class="form-label">Position</span>
+      <span class="align-top text-sm text-gray-500">*</span>
+      <!-- TODO: inline errors -->
+      <!-- <span class="form-error"></span> -->
+      <input name="position" class="form-input mb-3"  value="" required>
+    </label>
+    <label class="block">
+      <span class="form-label">Organization</span>
+      <span class="align-top text-sm text-gray-500">*</span>
+      <input name="organization" class="form-input mb-3" value="" required>
+    </label>
+    <label class="block">
+      <span class="form-label">URL</span>
+      <input type="url" name="url" class="form-input mb-3" value="">
+    </label>
+    <label class="block">
+      <span class="form-label">Description</span>
+      <span class="form-description">Please provide a description below if no URL is available.</span>
+      <textarea name="description" rows="4" class="form-textarea mb-3"></textarea>
+    </label>
+    <label class="block">
+      <span class="form-label">Email</span>
+      <span class="align-top text-sm text-gray-500">*</span>
+      <input type="email" name="email" class="form-input" value="" required>
+    </label>
+    <button class="btn btn-primary mt-6">Publish</button>
+  </form>
+{{ end }}

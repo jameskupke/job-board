@@ -47,6 +47,7 @@ func main() {
 	router.Static("/assets", "assets")
 
 	router.GET("/", ctrl.Home)
+	router.GET("/new", ctrl.NewJob)
 
 	router.Run()
 }
@@ -67,6 +68,10 @@ func (ctrl *Controller) Home(ctx *gin.Context) {
 	}
 
 	ctx.HTML(200, "index.html", gin.H{"jobs": jobs, "noJobs": len(jobs) == 0})
+}
+
+func (ctrl *Controller) NewJob(ctx *gin.Context) {
+	ctx.HTML(200, "new.html", gin.H{})
 }
 
 // data
