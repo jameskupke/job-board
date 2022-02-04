@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/gin-contrib/multitemplate v0.0.0-20220102045447-8a3ac507ec70 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect

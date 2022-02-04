@@ -919,7 +919,7 @@ video {
 
 .header-image:before {
     content: '';
-    background-image: url('/svg/circuit-board.svg');
+    background-image: url('/assets/svg/circuit-board.svg');
     border-bottom-right-radius: 300px;
     position: absolute;
     top: 0;
@@ -969,7 +969,7 @@ video {
   margin-right: auto;
   padding-top: 3rem;
   padding-bottom: 1rem;
-  background-image: url('/svg/circuit-board.svg');
+  background-image: url('/assets/svg/circuit-board.svg');
   background-position: center;
   border-top-left-radius: 160px;
   border-top-right-radius: 160px
