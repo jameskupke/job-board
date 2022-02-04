@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/gin-contrib/multitemplate"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -13,6 +15,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
+
+// TODO: create proper app config struct, valid required params
 
 func main() {
 	// migrate the db on startup
@@ -31,6 +35,9 @@ func main() {
 	ctrl := &Controller{DB: db}
 
 	router := gin.Default()
+
+	sessionStore := cookie.NewStore([]byte(os.Getenv("APP_SECRET")))
+	router.Use(sessions.Sessions("mysession", sessionStore))
 
 	router.Static("/assets", "assets")
 	router.HTMLRender = renderer()

@@ -29,7 +29,9 @@
     </header>
     <main class="px-4 py-16 flex-1">
       <div class="max-w-lg mx-auto">
-        <!-- @include('shared.flash') -->
+        {{ range .flashes }}
+          <p>{{ . }}</p>
+        {{ end }}
         {{ template "content" . }}
       </div>
     </main>

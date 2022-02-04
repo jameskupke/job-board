@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 )
@@ -18,34 +19,47 @@ func (ctrl *Controller) Index(ctx *gin.Context) {
 		log.Fatal(err) // TODO: handle this
 	}
 
-	ctx.HTML(200, "index", gin.H{
+	ctx.HTML(200, "index", addFlash(ctx, gin.H{
 		"jobs":   jobs,
 		"noJobs": len(jobs) == 0,
-	})
+	}))
+}
+
+func addFlash(ctx *gin.Context, base gin.H) gin.H {
+	session := sessions.Default(ctx)
+	base["flashes"] = session.Flashes()
+	session.Save()
+	return base
 }
 
 func (ctrl *Controller) NewJob(ctx *gin.Context) {
-	ctx.HTML(200, "new", gin.H{})
+	session := sessions.Default(ctx)
+	errors := session.Get("errors")
+	ctx.HTML(200, "new", gin.H{"errors": errors})
 }
 
 func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 	var newJobInput NewJob
 	ctx.Bind(&newJobInput)
+	session := sessions.Default(ctx)
 
 	if errs, valid := newJobInput.validate(); !valid {
-		// TODO: send back with errors in session data somehow
-		log.Fatal(errs)
+		session.Set("errors", errs)
+		session.Save()
+		ctx.Redirect(302, "/new")
 	}
 
-	// save job to DB
 	if _, err := newJobInput.saveToDB(ctrl.DB); err != nil {
-		fmt.Println("failed to save!")
-		log.Fatal(err) // TODO: actually handle
+		log.Print(fmt.Errorf("failed to save job to db: %w", err))
+		session.Set("errors", []string{"Error creating job"})
+		session.Save()
+		ctx.Redirect(302, "/new")
 	}
 
 	// TODO: send email with edit link
-	// TODO: success flash
 
+	session.AddFlash("Job created!")
+	session.Save()
 	ctx.Redirect(302, "/")
 }
 
