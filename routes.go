@@ -13,11 +13,9 @@ type Controller struct {
 }
 
 func (ctrl *Controller) Index(ctx *gin.Context) {
-	var jobs []Job
-
-	if err := ctrl.DB.Select(&jobs, "SELECT * FROM jobs"); err != nil {
-		// TODO: handle error properly
-		log.Fatal(err)
+	jobs, err := getAllJobs(ctrl.DB)
+	if err != nil {
+		log.Fatal(err) // TODO: handle this
 	}
 
 	ctx.HTML(200, "index", gin.H{
@@ -49,4 +47,13 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 	// TODO: success flash
 
 	ctx.Redirect(302, "/")
+}
+
+func (ctrl *Controller) ViewJob(ctx *gin.Context) {
+	id := ctx.Param("id")
+	job, err := getJob(id, ctrl.DB)
+	if err != nil {
+		log.Fatal(err) // TODO: err
+	}
+	ctx.HTML(200, "view", gin.H{"job": job})
 }

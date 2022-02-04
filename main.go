@@ -38,6 +38,7 @@ func main() {
 	router.GET("/", ctrl.Index)
 	router.GET("/new", ctrl.NewJob)
 	router.POST("/jobs", ctrl.CreateJob)
+	router.GET("/jobs/:id", ctrl.ViewJob)
 
 	router.Run()
 }
@@ -50,7 +51,8 @@ func renderer() multitemplate.Renderer {
 
 	r := multitemplate.NewRenderer()
 	r.AddFromFilesFuncs("index", funcMap, "./templates/base.html", "./templates/index.html")
-	r.AddFromFiles("new", "./templates/base.html", "./templates/new.html")
+	r.AddFromFilesFuncs("new", funcMap, "./templates/base.html", "./templates/new.html")
+	r.AddFromFilesFuncs("view", funcMap, "./templates/base.html", "./templates/view.html")
 
 	return r
 }

@@ -20,6 +20,25 @@ type Job struct {
 	PublishedAt  time.Time      `db:"published_at"`
 }
 
+func getAllJobs(db *sqlx.DB) ([]Job, error) {
+	var jobs []Job
+
+	if err := db.Select(&jobs, "SELECT * FROM jobs"); err != nil {
+		// TODO: handle error properly
+		return jobs, err
+	}
+
+	return jobs, nil
+}
+
+func getJob(id string, db *sqlx.DB) (Job, error) {
+	var job Job
+	if err := db.Get(&job, "SELECT * FROM jobs WHERE id = $1", id); err != nil {
+		return job, err
+	}
+	return job, nil
+}
+
 type NewJob struct {
 	Position     string `form:"position"`
 	Organization string `form:"organization"`

@@ -14,9 +14,9 @@
             </time>
         </a>
       </div>
-      {{ if .Url }}
+      {{ if .Url.Valid }}
       <a
-          href="{{ .Url }}"
+          href="{{ .Url.String }}"
           target="_blank"
           class="opacity-0 text-sm font-bold text-orange-500 uppercase absolute inset-0 flex items-center justify-end p-4 sm:group-hover:opacity-100 sm:focus:opacity-100"
           >Apply</a>
