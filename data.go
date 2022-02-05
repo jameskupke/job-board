@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -23,8 +24,8 @@ type Job struct {
 func getAllJobs(db *sqlx.DB) ([]Job, error) {
 	var jobs []Job
 
-	if err := db.Select(&jobs, "SELECT * FROM jobs"); err != nil {
-		// TODO: handle error properly
+	err := db.Select(&jobs, "SELECT * FROM jobs")
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return jobs, err
 	}
 
@@ -33,9 +34,12 @@ func getAllJobs(db *sqlx.DB) ([]Job, error) {
 
 func getJob(id string, db *sqlx.DB) (Job, error) {
 	var job Job
-	if err := db.Get(&job, "SELECT * FROM jobs WHERE id = $1", id); err != nil {
+
+	err := db.Get(&job, "SELECT * FROM jobs WHERE id = $1", id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return job, err
 	}
+
 	return job, nil
 }
 
@@ -47,23 +51,29 @@ type NewJob struct {
 	Email        string `form:"email"`
 }
 
-func (newJob *NewJob) validate() ([]string, bool) {
-	errs := []string{}
+func (newJob *NewJob) validate() map[string]string {
+	errs := make(map[string]string)
+
 	if newJob.Position == "" {
-		errs = append(errs, "Must provide a Position")
+		errs["position"] = "Must provide a Position"
 	}
+
 	if newJob.Organization == "" {
-		errs = append(errs, "Must provide a Organization")
+		errs["organization"] = "Must provide a Organization"
 	}
+
 	if newJob.Url == "" && newJob.Description == "" {
-		errs = append(errs, "Must provide either a Url or a Description")
+		errs["url"] = "Must provide either a Url or a Description"
 	}
+
 	// TODO: validate Url
+
 	if newJob.Email == "" {
-		errs = append(errs, "Must provide a Email")
+		// TODO: validate email
+		errs["email"] = "Must provide a valid Email"
 	}
-	// TODO: validate email
-	return errs, len(errs) == 0
+
+	return errs
 }
 
 func (newJob *NewJob) saveToDB(db *sqlx.DB) (sql.Result, error) {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"html/template"
-	"log"
 	"os"
 
 	"github.com/gin-contrib/multitemplate"
@@ -29,7 +28,7 @@ func main() {
 
 	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	ctrl := &Controller{DB: db}
@@ -37,6 +36,7 @@ func main() {
 	router := gin.Default()
 
 	sessionStore := cookie.NewStore([]byte(os.Getenv("APP_SECRET")))
+	// TODO: set more secure session settings for prod
 	router.Use(sessions.Sessions("mysession", sessionStore))
 
 	router.Static("/assets", "assets")
