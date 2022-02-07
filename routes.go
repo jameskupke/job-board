@@ -38,13 +38,32 @@ func (ctrl *Controller) NewJob(ctx *gin.Context) {
 	ctx.HTML(200, "new", addFlash(ctx, tVars))
 }
 
+func (ctrl *Controller) EditJob(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+
+	id := ctx.Param("id")
+	job, err := getJob(id, ctrl.DB)
+	if err != nil {
+		panic(err) // TODO: err
+	}
+
+	tVars := gin.H{"job": job}
+
+	fields := []string{"position", "organization", "url", "description", "email"}
+	for _, k := range fields {
+		tVars[k] = session.Flashes(k + "_err")
+	}
+
+	ctx.HTML(200, "edit", addFlash(ctx, tVars))
+}
+
 func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 	var newJobInput NewJob
 	ctx.Bind(&newJobInput)
 
 	session := sessions.Default(ctx)
 
-	if errs := newJobInput.validate(); len(errs) != 0 {
+	if errs := newJobInput.validate(false); len(errs) != 0 {
 		for k, v := range errs {
 			session.AddFlash(v, k+"_err")
 		}
@@ -67,6 +86,41 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 	// TODO: send email with edit link
 
 	session.AddFlash("Job created!")
+	session.Save()
+
+	ctx.Redirect(302, "/")
+}
+
+func (ctrl *Controller) UpdateJob(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	var newJobInput NewJob
+	ctx.Bind(&newJobInput)
+
+	session := sessions.Default(ctx)
+
+	if errs := newJobInput.validate(true); len(errs) != 0 {
+		for k, v := range errs {
+			session.AddFlash(v, k+"_err")
+		}
+		session.Save()
+
+		// TODO: somehow preserve previously provided values?
+		ctx.Redirect(302, "/jobs/"+id+"/edit")
+		return
+	}
+
+	job, err := getJob(id, ctrl.DB)
+	if err != nil {
+		panic(err) // TODO: handle
+	}
+
+	job.update(newJobInput)
+	if _, err = job.save(ctrl.DB); err != nil {
+		panic(err) // TODO: handle
+	}
+
+	session.AddFlash("Job updated!")
 	session.Save()
 
 	ctx.Redirect(302, "/")

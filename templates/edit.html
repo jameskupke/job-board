@@ -1,0 +1,46 @@
+{{ define "content" }}
+  <form method="post" action="/jobs/{{ .job.ID }}">
+    <!-- TODO: csrf -->
+    <label class="block">
+      <span class="form-label">Position</span>
+      <span class="align-top text-sm text-gray-500">*</span>
+      <!-- TODO: inline errors -->
+      {{ if .position_err }}
+        {{ range .position_err }}
+          <span class="form-error">{{ . }}</span>
+        {{ end }}
+      {{ end }}
+      <input name="position" class="form-input mb-3"  value="{{ .job.Position }}" required>
+    </label>
+    <label class="block">
+      <span class="form-label">Organization</span>
+      <span class="align-top text-sm text-gray-500">*</span>
+      {{ if .organization_err }}
+        {{ range .organization_err }}
+          <span class="form-error">{{ . }}</span>
+        {{ end }}
+      {{ end }}
+      <input name="organization" class="form-input mb-3" value="{{ .job.Organization }}" required>
+    </label>
+    <label class="block">
+      <span class="form-label">URL</span>
+      {{ if .url_err }}
+        {{ range .url_err }}
+          <span class="form-error">{{ . }}</span>
+        {{ end }}
+      {{ end }}
+      <input type="url" name="url" class="form-input mb-3" value="{{ .job.Url.String }}">
+    </label>
+    <label class="block">
+      <span class="form-label">Description</span>
+      {{ if .description_err }}
+        {{ range .description_err }}
+          <span class="form-error">{{ . }}</span>
+        {{ end }}
+      {{ end }}
+      <span class="form-description">Please provide a description below if no URL is available.</span>
+      <textarea name="description" rows="4" class="form-textarea mb-3">{{ .job.Description.String }}</textarea>
+    </label>
+    <button class="btn btn-primary mt-6">Update</button>
+  </form>
+{{ end }}
