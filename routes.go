@@ -149,5 +149,6 @@ func (ctrl *Controller) ViewJob(ctx *gin.Context) {
 func addFlash(ctx *gin.Context, base gin.H) gin.H {
 	session := sessions.Default(ctx)
 	base["flashes"] = session.Flashes()
+	session.Save()
 	return base
 }
