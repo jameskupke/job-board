@@ -11,7 +11,7 @@ processes = []
 #   buildpacks = ["gcr.io/paketo-buildpacks/go"]
 # 
 [env]
-  GIN_MODE = "release"
+  APP_ENV = "release"
   PORT = "8080"
 
 [experimental]

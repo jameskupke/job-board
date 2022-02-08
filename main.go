@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"os"
 
 	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-contrib/sessions"
@@ -19,15 +18,22 @@ import (
 // TODO: create proper app config struct, valid required params
 
 func main() {
+	config, err := LoadConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	gin.SetMode(config.Env)
+
 	// migrate the db on startup
-	m, err := migrate.New("file://sql", os.Getenv("DATABASE_URL"))
+	m, err := migrate.New("file://sql", config.DatabaseURL)
 	if err != nil {
 		panic(err)
 	}
 
 	m.Up()
 
-	db, err := sqlx.Open("postgres", os.Getenv("DATABASE_URL"))
+	db, err := sqlx.Open("postgres", config.DatabaseURL)
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +42,7 @@ func main() {
 
 	router := gin.Default()
 
-	sessionStore := cookie.NewStore([]byte(os.Getenv("APP_SECRET")))
+	sessionStore := cookie.NewStore([]byte(config.AppSecret))
 	// TODO: set more secure session settings for prod
 	router.Use(sessions.Sessions("mysession", sessionStore))
 
@@ -49,7 +55,7 @@ func main() {
 	router.GET("/jobs/:id", ctrl.ViewJob)
 
 	authorized := router.Group("/")
-	authorized.Use(requireAuth(db, os.Getenv("APP_SECRET")))
+	authorized.Use(requireAuth(db, config.AppSecret))
 	{
 		authorized.GET("/jobs/:id/edit", ctrl.EditJob)
 		authorized.POST("/jobs/:id", ctrl.UpdateJob)
