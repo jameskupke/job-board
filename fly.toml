@@ -13,6 +13,7 @@ processes = []
 [env]
   APP_URL = "https://devict-job-board.fly.dev"
   APP_ENV = "release"
+  FROM_EMAIL = "jobs@mail.devict.org"
   PORT = "8080"
 
 [experimental]

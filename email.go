@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/smtp"
+	"strings"
 )
 
 type EmailConfig struct {
@@ -21,6 +22,7 @@ func sendEmail(recipient, subject, body string, conf EmailConfig) error {
 		body,
 	)
 
-	auth := smtp.CRAMMD5Auth(conf.SMTPUsername, conf.SMTPPassword)
+	host := strings.Split(conf.SMTPHost, ":")[0]
+	auth := smtp.PlainAuth("", conf.SMTPUsername, conf.SMTPPassword, host)
 	return smtp.SendMail(conf.SMTPHost, auth, conf.FromEmail, []string{recipient}, []byte(msg))
 }
