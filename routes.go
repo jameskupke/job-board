@@ -10,7 +10,8 @@ import (
 )
 
 type Controller struct {
-	DB *sqlx.DB
+	DB     *sqlx.DB
+	Config Config
 }
 
 func (ctrl *Controller) Index(ctx *gin.Context) {
@@ -74,7 +75,8 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 		return
 	}
 
-	if _, err := newJobInput.saveToDB(ctrl.DB); err != nil {
+	job, err := newJobInput.saveToDB(ctrl.DB)
+	if err != nil {
 		log.Print(fmt.Errorf("failed to save job to db: %w", err))
 
 		session.AddFlash("Error creating job")
@@ -84,7 +86,11 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 		return
 	}
 
-	// TODO: send email with edit link
+	message := fmt.Sprintf("Your job has been created!\n\n%s", signedJobRoute(job, ctrl.Config))
+	err = sendEmail(newJobInput.Email, "Job Created!", message, ctrl.Config.Email)
+	if err != nil {
+		panic(err) // TODO: handle
+	}
 
 	session.AddFlash("Job created!")
 	session.Save()

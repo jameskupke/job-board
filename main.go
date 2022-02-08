@@ -38,7 +38,7 @@ func main() {
 		panic(err)
 	}
 
-	ctrl := &Controller{DB: db}
+	ctrl := &Controller{DB: db, Config: config}
 
 	router := gin.Default()
 

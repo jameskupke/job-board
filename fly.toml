@@ -11,6 +11,7 @@ processes = []
 #   buildpacks = ["gcr.io/paketo-buildpacks/go"]
 # 
 [env]
+  APP_URL = "https://devict-job-board.fly.dev"
   APP_ENV = "release"
   PORT = "8080"
 

@@ -6,10 +6,11 @@ import (
 )
 
 type Config struct {
-	Email       EmailConfig
-	DatabaseURL string
-	AppSecret   string
+	URL         string
 	Env         string
+	AppSecret   string
+	DatabaseURL string
+	Email       EmailConfig
 }
 
 func LoadConfig() (Config, error) {
@@ -21,6 +22,7 @@ func LoadConfig() (Config, error) {
 	}
 
 	config := Config{
+		URL:         os.Getenv("APP_URL"),
 		Env:         os.Getenv("APP_ENV"),
 		AppSecret:   os.Getenv("APP_SECRET"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
@@ -38,6 +40,9 @@ func LoadConfig() (Config, error) {
 	}
 	if emailConfig.FromEmail == "" {
 		return config, errors.New("must provide FROM_EMAIL")
+	}
+	if config.URL == "" {
+		config.URL = "http://localhost:8080"
 	}
 	if config.Env == "" {
 		config.Env = "debug"

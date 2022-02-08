@@ -94,8 +94,11 @@ func (newJob *NewJob) validate(update bool) map[string]string {
 	return errs
 }
 
-func (newJob *NewJob) saveToDB(db *sqlx.DB) (sql.Result, error) {
-	query := "INSERT INTO jobs (position, organization, url, description, email) VALUES ($1, $2, $3, $4, $5)"
+func (newJob *NewJob) saveToDB(db *sqlx.DB) (Job, error) {
+	query := `INSERT INTO jobs
+    (position, organization, url, description, email)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *`
 
 	params := []interface{}{
 		newJob.Position,
@@ -111,5 +114,9 @@ func (newJob *NewJob) saveToDB(db *sqlx.DB) (sql.Result, error) {
 		newJob.Email,
 	}
 
-	return db.Exec(query, params...)
+	var job Job
+	if err := db.QueryRowx(query, params...).StructScan(&job); err != nil {
+		return job, err
+	}
+	return job, nil
 }
