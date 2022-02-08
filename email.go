@@ -15,7 +15,7 @@ type EmailConfig struct {
 
 func sendEmail(recipient, subject, body string, conf EmailConfig) error {
 	msg := fmt.Sprintf(
-		"From: %s\nTo: %s\nSubject: %s\nContent-Type: text/html; charset=UTF-8\n\n%s",
+		"From: devICT Job Board <%s>\nTo: %s\nSubject: %s\nContent-Type: text/html; charset=UTF-8\n\n%s",
 		conf.FromEmail,
 		recipient,
 		subject,
