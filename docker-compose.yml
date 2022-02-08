@@ -20,6 +20,7 @@ services:
     environment:
       DATABASE_URL: "postgres://jobs:supsupsup@db:5432/jobs?sslmode=disable"
       APP_SECRET: "itsasecret"
+      GIN_MODE: "debug"
     volumes:
       - .:/app
     ports:
