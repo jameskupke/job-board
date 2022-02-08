@@ -2,7 +2,9 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -52,6 +54,9 @@ func LoadConfig() (Config, error) {
 	}
 	if config.DatabaseURL == "" {
 		return config, errors.New("must provide DATABASE_URL")
+	}
+	if !strings.Contains(config.DatabaseURL, "sslmode=disable") {
+		config.DatabaseURL = fmt.Sprintf("%s?sslmode=disable", config.DatabaseURL)
 	}
 
 	return config, nil

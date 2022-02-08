@@ -19,7 +19,7 @@ services:
     working_dir: /app
     env_file: .env
     environment:
-      DATABASE_URL: "postgres://jobs:supsupsup@db:5432/jobs?sslmode=disable"
+      DATABASE_URL: "postgres://jobs:supsupsup@db:5432/jobs"
       APP_SECRET: "itsasecret"
       APP_ENV: "debug"
       FROM_EMAIL: "test@localhost"
