@@ -47,7 +47,8 @@ func (ctrl *Controller) EditJob(ctx *gin.Context) {
 		panic(err) // TODO: err
 	}
 
-	tVars := gin.H{"job": job}
+	token := ctx.Query("token")
+	tVars := gin.H{"job": job, "token": token}
 
 	fields := []string{"position", "organization", "url", "description", "email"}
 	for _, k := range fields {

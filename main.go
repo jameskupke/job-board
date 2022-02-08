@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"os"
 
@@ -46,8 +47,13 @@ func main() {
 	router.GET("/new", ctrl.NewJob)
 	router.POST("/jobs", ctrl.CreateJob)
 	router.GET("/jobs/:id", ctrl.ViewJob)
-	router.GET("/jobs/:id/edit", ctrl.EditJob)
-	router.POST("/jobs/:id", ctrl.UpdateJob)
+
+	authorized := router.Group("/")
+	authorized.Use(requireAuth(db, os.Getenv("APP_SECRET")))
+	{
+		authorized.GET("/jobs/:id/edit", ctrl.EditJob)
+		authorized.POST("/jobs/:id", ctrl.UpdateJob)
+	}
 
 	router.Run()
 }
@@ -65,4 +71,24 @@ func renderer() multitemplate.Renderer {
 	r.AddFromFilesFuncs("view", funcMap, "./templates/base.html", "./templates/view.html")
 
 	return r
+}
+
+func requireAuth(db *sqlx.DB, secret string) func(*gin.Context) {
+	return func(ctx *gin.Context) {
+		jobID := ctx.Param("id")
+		job, err := getJob(jobID, db)
+		if err != nil {
+			panic(err) // TODO: handle!
+		}
+
+		token := ctx.Query("token")
+		expected := signatureForJob(job, secret)
+
+		fmt.Printf("token: %s\n", expected)
+
+		if token != expected {
+			ctx.AbortWithStatus(403)
+			return
+		}
+	}
 }
