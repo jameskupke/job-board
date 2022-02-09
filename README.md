@@ -18,6 +18,14 @@ $ docker compose up
 $ make psql
 ```
 
+## slack integration
+
+setting the `SLACK_HOOK` env var will enable posting new jobs to Slack to the provided Slack hook url. if not configured, this functionality will simply be disabled
+
+## email integration
+
+for testing email sending locally, it is recommended that you use [mailtrap](http://mailtrap.io), then copy `.env.example` to `.env` and add your configuration there
+
 ## database migrations
 
 [golang-migrate](https://github.com/golang-migrate/migrate) is used for db migrations. the server runs migrations as it starts up, so unless you're adding new migrations or doing other stuff with the migration files you shouldn't have to worry about this tool.
