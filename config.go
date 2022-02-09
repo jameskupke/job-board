@@ -13,6 +13,7 @@ type Config struct {
 	AppSecret   string
 	DatabaseURL string
 	Email       EmailConfig
+  SlackHook string
 }
 
 func LoadConfig() (Config, error) {
@@ -28,6 +29,7 @@ func LoadConfig() (Config, error) {
 		Env:         os.Getenv("APP_ENV"),
 		AppSecret:   os.Getenv("APP_SECRET"),
 		DatabaseURL: os.Getenv("DATABASE_URL"),
+    SlackHook: : os.GetEnv("SLACK_HOOK"),
 		Email:       emailConfig,
 	}
 
@@ -54,6 +56,9 @@ func LoadConfig() (Config, error) {
 	}
 	if config.DatabaseURL == "" {
 		return config, errors.New("must provide DATABASE_URL")
+	}
+	if config.SlackHook == "" {
+    fmt.Println("no SLACK_HOOK provided, slack integration disabled")
 	}
 	if !strings.Contains(config.DatabaseURL, "sslmode=disable") {
 		config.DatabaseURL = fmt.Sprintf("%s?sslmode=disable", config.DatabaseURL)
