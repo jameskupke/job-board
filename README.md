@@ -1,5 +1,7 @@
 # devICT job board
 
+a go rewrite of the original [devICT job board](https://github.com/devict/jobs.devict) by [@imacrayon](https://github.com/imacrayon), design and original feature set came from there!
+
 ## requirements
 
 - docker + docker compose
