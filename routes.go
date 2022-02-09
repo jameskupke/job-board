@@ -96,6 +96,12 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 		panic(err) // TODO: handle
 	}
 
+	if ctrl.Config.SlackHook != "" {
+		if err = postToSlack(job, ctrl.Config); err != nil {
+			panic(err) // TODO: handle
+		}
+	}
+
 	session.AddFlash("Job created!")
 	session.Save()
 

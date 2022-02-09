@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 type SlackMessage struct {
-	text string `json:"text"`
+	Text string `json:"text"`
 }
 
 func postToSlack(job Job, config Config) error {
@@ -18,7 +18,7 @@ func postToSlack(job Job, config Config) error {
 		return fmt.Errorf("failed to marshal slack message: %w", err)
 	}
 
-	_, err = http.Post(config.SlackHook, "application/json", strings.NewReader(messageStr))
+	_, err = http.Post(config.SlackHook, "application/json", bytes.NewReader(messageStr))
 	if err != nil {
 		return fmt.Errorf("failed to post to slack: %w", err)
 	}
@@ -34,5 +34,5 @@ func slackMessageFromJob(job Job, config Config) SlackMessage {
 		job.Position,
 		job.Organization,
 	)
-	return SlackMessage{text: text}
+	return SlackMessage{Text: text}
 }
