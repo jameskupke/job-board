@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/multitemplate"
@@ -55,7 +56,6 @@ func main() {
 
 	sessionOpts := sessions.Options{
 		Path:     "/",
-		Domain:   config.URL,
 		MaxAge:   24 * 60, // 1 day
 		Secure:   config.Env != "debug",
 		HttpOnly: true,
