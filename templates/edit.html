@@ -4,7 +4,6 @@
     <label class="block">
       <span class="form-label">Position</span>
       <span class="align-top text-sm text-gray-500">*</span>
-      <!-- TODO: inline errors -->
       {{ if .position_err }}
         {{ range .position_err }}
           <span class="form-error">{{ . }}</span>
