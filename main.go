@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"time"
 
 	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-contrib/sessions"
@@ -37,6 +38,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	go func() {
+		for {
+			_, err := db.Exec("DELETE FROM jobs WHERE published_at < NOW() - INTERVAL '30 DAYS'")
+			if err != nil {
+				fmt.Printf("error clearing old jobs: %s\n", err.Error())
+			}
+			time.Sleep(1 * time.Hour)
+		}
+	}()
 
 	ctrl := &Controller{DB: db, Config: config}
 
