@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"net/http"
 	"time"
 
 	"github.com/gin-contrib/multitemplate"
@@ -15,8 +16,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
-
-// TODO: create proper app config struct, valid required params
 
 func main() {
 	config, err := LoadConfig()
@@ -52,9 +51,19 @@ func main() {
 	ctrl := &Controller{DB: db, Config: config}
 
 	router := gin.Default()
+	router.SetTrustedProxies(nil)
+
+	sessionOpts := sessions.Options{
+		Path:     "/",
+		Domain:   config.URL,
+		MaxAge:   24 * 60, // 1 day
+		Secure:   config.Env != "debug",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	}
 
 	sessionStore := cookie.NewStore([]byte(config.AppSecret))
-	// TODO: set more secure session settings for prod
+	sessionStore.Options(sessionOpts)
 	router.Use(sessions.Sessions("mysession", sessionStore))
 
 	router.Static("/assets", "assets")
