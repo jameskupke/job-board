@@ -27,5 +27,5 @@ jobs:
         with:
           payload: |
             {
-              "text": "deploy failed! <https://github.com/${{ github.repository }}/runs/${{ github.run_id }}|inspect the job>"
+              "text": "deploy failed! <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|inspect the job>"
             }
