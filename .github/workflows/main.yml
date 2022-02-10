@@ -1,13 +1,33 @@
 name: Fly Deploy
-on: [push]
-env:
-  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+on:
+  push:
+    branches: ['main']
 jobs:
   deploy:
-      name: Deploy app
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
-        - uses: superfly/flyctl-actions@1.1
-          with:
-            args: "deploy"
+    name: Fly Deploy
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: superfly/flyctl-actions@1.1
+        with:
+          args: "deploy"
+      - if: success()
+        uses: slackapi/slack-github-action@v1.18.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "text": "deployed <https://github.com/${{ github.repository }}/commit/${{ github.sha}}|${{ github.sha }}>"
+            }
+      - if: failure()
+        uses: slackapi/slack-github-action@v1.18.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "text": "deploy failed! <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|inspect the job>"
+            }
