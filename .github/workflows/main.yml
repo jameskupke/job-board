@@ -9,10 +9,11 @@ jobs:
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: superfly/flyctl-actions@1.1
-        with:
-          args: "deploy"
+      # - uses: actions/checkout@v2
+      # - uses: superfly/flyctl-actions@1.1
+      #   with:
+      #     args: "deploy"
+      - run: exit 1 # TODO: remove, testing only
       - if: success()
         uses: slackapi/slack-github-action@v1.18.0
         env:
@@ -29,5 +30,5 @@ jobs:
         with:
           payload: |
             {
-              "text": "deploy failed! <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|inspect the job>"
+              "text": "deploy failed! <https://github.com/${{ github.repository }}/runs/${{ github.run_id }}|inspect the job>"
             }
