@@ -1,65 +1,43 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"strings"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
-	URL         string
-	Env         string
-	AppSecret   string
-	DatabaseURL string
+	URL         string `envconfig:"APP_URL" required:"true" default:"http://localhost:8080"`
+	Env         string `envconfig:"APP_ENV" required:"true" default:"debug"`
+	AppSecret   string `envconfig:"APP_SECRET" required:"true"`
+	DatabaseURL string `envconfig:"DATABASE_URL" required:"true"`
 	Email       EmailConfig
-	SlackHook   string
+	Twitter     TwitterConfig
+	SlackHook   string `envconfig:"SLACK_HOOK" required:"true"`
+}
+
+type EmailConfig struct {
+	SMTPHost     string `envconfig:"SMTP_HOST" required:"true"`
+	FromEmail    string `envconfig:"FROM_EMAIL" required:"true"`
+	SMTPUsername string `envconfig:"SMTP_USERNAME" required:"true"`
+	SMTPPassword string `envconfig:"SMTP_PASSWORD" required:"true"`
+}
+
+type TwitterConfig struct {
+	AccessToken       string `envconfig:"TW_ACCESS_TOKEN" required:"true"`
+	AccessTokenSecret string `envconfig:"TW_ACCESS_TOKEN_SECRET" required:"true"`
+	APIKey            string `envconfig:"TW_API_KEY" required:"true"`
+	APISecretKey      string `envconfig:"TW_API_SECRET_KEY" required:"true"`
 }
 
 func LoadConfig() (Config, error) {
-	emailConfig := EmailConfig{
-		SMTPHost:     os.Getenv("SMTP_HOST"),
-		SMTPUsername: os.Getenv("SMTP_USERNAME"),
-		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
-		FromEmail:    os.Getenv("FROM_EMAIL"),
+	var config Config
+
+	if err := envconfig.Process("", &config); err != nil {
+		return config, err
 	}
 
-	config := Config{
-		URL:         os.Getenv("APP_URL"),
-		Env:         os.Getenv("APP_ENV"),
-		AppSecret:   os.Getenv("APP_SECRET"),
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		SlackHook:   os.Getenv("SLACK_HOOK"),
-		Email:       emailConfig,
-	}
-
-	if emailConfig.SMTPHost == "" {
-		return config, errors.New("must provide SMTP_HOST")
-	}
-	if emailConfig.SMTPUsername == "" {
-		return config, errors.New("must provide SMTP_USERNAME")
-	}
-	if emailConfig.SMTPPassword == "" {
-		return config, errors.New("must provide SMTP_PASSWORD")
-	}
-	if emailConfig.FromEmail == "" {
-		return config, errors.New("must provide FROM_EMAIL")
-	}
-	if config.URL == "" {
-		config.URL = "http://localhost:8080"
-	}
-	if config.Env == "" {
-		config.Env = "debug"
-	}
-	if config.AppSecret == "" {
-		return config, errors.New("must provide APP_SECRET")
-	}
-	if config.DatabaseURL == "" {
-		return config, errors.New("must provide DATABASE_URL")
-	}
-	if config.SlackHook == "" {
-		fmt.Println("no SLACK_HOOK provided, slack integration disabled")
-	}
 	if !strings.Contains(config.DatabaseURL, "sslmode=disable") {
 		config.DatabaseURL = fmt.Sprintf("%s?sslmode=disable", config.DatabaseURL)
 	}

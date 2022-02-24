@@ -102,6 +102,12 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 		}
 	}
 
+	if ctrl.Config.Twitter.AccessToken != "" {
+		if err = postToTwitter(job, ctrl.Config); err != nil {
+			panic(err)
+		}
+	}
+
 	session.AddFlash("Job created!")
 	session.Save()
 
