@@ -90,13 +90,15 @@ func (newJob *NewJob) validate(update bool) map[string]string {
 		errs["url"] = "Must provide a valid Url"
 	}
 
-	if !update && newJob.Email == "" {
-		errs["email"] = "Must provide an Email Address"
-	}
+	if !update {
+		if newJob.Email == "" {
+			errs["email"] = "Must provide an Email Address"
+		}
 
-	// TODO: Maybe do more than just validate email format?
-	if _, err := mail.ParseAddress(newJob.Email); err != nil {
-		errs["email"] = "Must provide a valid Email"
+		// TODO: Maybe do more than just validate email format?
+		if _, err := mail.ParseAddress(newJob.Email); err != nil {
+			errs["email"] = "Must provide a valid Email"
+		}
 	}
 
 	return errs
