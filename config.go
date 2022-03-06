@@ -14,7 +14,7 @@ type Config struct {
 	DatabaseURL string `envconfig:"DATABASE_URL" required:"true"`
 	Email       EmailConfig
 	Twitter     TwitterConfig
-	SlackHook   string `envconfig:"SLACK_HOOK" required:"true"`
+	SlackHook   string `envconfig:"SLACK_HOOK"`
 }
 
 type EmailConfig struct {
@@ -25,10 +25,10 @@ type EmailConfig struct {
 }
 
 type TwitterConfig struct {
-	AccessToken       string `envconfig:"TW_ACCESS_TOKEN" required:"true"`
-	AccessTokenSecret string `envconfig:"TW_ACCESS_TOKEN_SECRET" required:"true"`
-	APIKey            string `envconfig:"TW_API_KEY" required:"true"`
-	APISecretKey      string `envconfig:"TW_API_SECRET_KEY" required:"true"`
+	AccessToken       string `envconfig:"TW_ACCESS_TOKEN"`
+	AccessTokenSecret string `envconfig:"TW_ACCESS_TOKEN_SECRET"`
+	APIKey            string `envconfig:"TW_API_KEY"`
+	APISecretKey      string `envconfig:"TW_API_SECRET_KEY"`
 }
 
 func LoadConfig() (Config, error) {
