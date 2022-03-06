@@ -33,7 +33,8 @@ func (ctrl *Controller) NewJob(ctx *gin.Context) {
 
 	tVars := gin.H{}
 	for _, k := range fields {
-		tVars[k] = session.Flashes(k + "_err")
+		f := fmt.Sprintf("%s_err", k)
+		tVars[f] = session.Flashes(f)
 	}
 
 	ctx.HTML(200, "new", addFlash(ctx, tVars))
@@ -53,7 +54,8 @@ func (ctrl *Controller) EditJob(ctx *gin.Context) {
 
 	fields := []string{"position", "organization", "url", "description", "email"}
 	for _, k := range fields {
-		tVars[k] = session.Flashes(k + "_err")
+		f := fmt.Sprintf("%s_err", k)
+		tVars[f] = session.Flashes(f)
 	}
 
 	ctx.HTML(200, "edit", addFlash(ctx, tVars))
@@ -67,7 +69,7 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 
 	if errs := newJobInput.validate(false); len(errs) != 0 {
 		for k, v := range errs {
-			session.AddFlash(v, k+"_err")
+			session.AddFlash(v, fmt.Sprintf("%s_err", k))
 		}
 		session.Save()
 
@@ -124,7 +126,7 @@ func (ctrl *Controller) UpdateJob(ctx *gin.Context) {
 
 	if errs := newJobInput.validate(true); len(errs) != 0 {
 		for k, v := range errs {
-			session.AddFlash(v, k+"_err")
+			session.AddFlash(v, fmt.Sprintf("%s_err", k))
 		}
 		session.Save()
 
