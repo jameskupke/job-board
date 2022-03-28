@@ -1,9 +1,16 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/multitemplate"
@@ -18,40 +25,74 @@ import (
 )
 
 func main() {
-	config, err := LoadConfig()
-	if err != nil {
-		panic(err)
+	log.SetFlags(log.Flags() | log.Lshortfile)
+	log.SetOutput(os.Stderr)
+
+	if err := run(); err != nil {
+		log.Fatalln("main failed to run:", err)
 	}
 
-	gin.SetMode(config.Env)
+	log.Println("sucessful shutdown")
+}
+
+func run() error {
+	config, err := LoadConfig()
+	if err != nil {
+		return fmt.Errorf("failed to LoadConfig: %w", err)
+	}
 
 	// migrate the db on startup
 	m, err := migrate.New("file://sql", config.DatabaseURL)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to migrate.New: %w", err)
 	}
 
-	m.Up()
+	if err := m.Up(); err != nil {
+		if !errors.Is(err, migrate.ErrNoChange) {
+			return fmt.Errorf("failed to migrate Up: %w", err)
+		}
+
+		log.Println("no new migrations detected, schema is current")
+	}
 
 	db, err := sqlx.Open("postgres", config.DatabaseURL)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to sqlx.Open: %w", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(time.Hour)
+		defer ticker.Stop()
+
 		for {
-			_, err := db.Exec("DELETE FROM jobs WHERE published_at < NOW() - INTERVAL '30 DAYS'")
-			if err != nil {
-				fmt.Printf("error clearing old jobs: %s\n", err.Error())
+			select {
+			case <-ctx.Done():
+				log.Println("shutting down old jobs background process")
+				return
+			case <-ticker.C:
+				_, err := db.Exec("DELETE FROM jobs WHERE published_at < NOW() - INTERVAL '30 DAYS'")
+				if err != nil {
+					log.Println(fmt.Errorf("error clearing old jobs: %w", err))
+				}
 			}
-			time.Sleep(1 * time.Hour)
 		}
 	}()
 
-	ctrl := &Controller{DB: db, Config: config}
+	gin.SetMode(config.Env)
+	gin.DefaultWriter = log.Writer()
 
 	router := gin.Default()
-	router.SetTrustedProxies(nil)
+
+	if err := router.SetTrustedProxies(nil); err != nil {
+		return fmt.Errorf("failed to SetTrustedProxies: %w", err)
+	}
 
 	sessionOpts := sessions.Options{
 		Path:     "/",
@@ -68,6 +109,7 @@ func main() {
 	router.Static("/assets", "assets")
 	router.HTMLRender = renderer()
 
+	ctrl := &Controller{DB: db, Config: config}
 	router.GET("/", ctrl.Index)
 	router.GET("/new", ctrl.NewJob)
 	router.POST("/jobs", ctrl.CreateJob)
@@ -80,7 +122,40 @@ func main() {
 		authorized.POST("/jobs/:id", ctrl.UpdateJob)
 	}
 
-	router.Run()
+	server := http.Server{
+		Addr:    config.Port,
+		Handler: router,
+	}
+
+	serverErrors := make(chan error, 1)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Printf("server listening on port %s", server.Addr)
+		serverErrors <- server.ListenAndServe()
+	}()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case <-serverErrors:
+		return fmt.Errorf("received server error: %w", err)
+
+	case sig := <-shutdown:
+		log.Printf("received shutdown signal %q", sig)
+
+		cancel()
+
+		if err := server.Shutdown(context.Background()); err != nil {
+			return fmt.Errorf("failed to server.Shutdown: %w", err)
+		}
+	}
+
+	wg.Wait()
+
+	return nil
 }
 
 func renderer() multitemplate.Renderer {
@@ -103,13 +178,13 @@ func requireAuth(db *sqlx.DB, secret string) func(*gin.Context) {
 		jobID := ctx.Param("id")
 		job, err := getJob(jobID, db)
 		if err != nil {
-			panic(err) // TODO: handle!
+			log.Println(fmt.Errorf("requireAuth failed to getJob: %w", err))
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+			return
 		}
 
 		token := ctx.Query("token")
 		expected := signatureForJob(job, secret)
-
-		fmt.Printf("token: %s\n", expected)
 
 		if token != expected {
 			ctx.AbortWithStatus(403)
