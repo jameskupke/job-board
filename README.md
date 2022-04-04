@@ -10,14 +10,20 @@ a go rewrite of the original [devICT job board](https://github.com/devict/jobs.d
 
 ## running locally
 
-```
+```shell
 $ docker compose up
 ```
 
 ## accessing the database
 
-```
+```shell
 $ make psql
+```
+
+## seed the database with test data
+
+```shell
+$ make seed-db
 ```
 
 ## slack integration
