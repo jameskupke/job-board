@@ -1,19 +1,21 @@
-package main
+package services
 
 import (
 	"fmt"
 
+	"github.com/devict/job-board/pkg/config"
+	"github.com/devict/job-board/pkg/data"
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
 )
 
-func postToTwitter(job Job, config Config) error {
-	tweetStr := tweetFromJob(job, config)
+func PostToTwitter(job data.Job, c config.Config) error {
+	tweetStr := tweetFromJob(job, c)
 
-	oa := oauth1.NewConfig(config.Twitter.APIKey, config.Twitter.APISecretKey)
+	oa := oauth1.NewConfig(c.Twitter.APIKey, c.Twitter.APISecretKey)
 	token := oauth1.NewToken(
-		config.Twitter.AccessToken,
-		config.Twitter.AccessTokenSecret,
+		c.Twitter.AccessToken,
+		c.Twitter.AccessTokenSecret,
 	)
 	httpClient := oa.Client(oauth1.NoContext, token)
 
@@ -28,12 +30,12 @@ func postToTwitter(job Job, config Config) error {
 	return nil
 }
 
-func tweetFromJob(job Job, config Config) string {
+func tweetFromJob(job data.Job, c config.Config) string {
 	return fmt.Sprintf(
 		"A job was posted! -- %s at %s\n\nMore info at %s/jobs/%s",
 		job.Position,
 		job.Organization,
-		config.URL,
+		c.URL,
 		job.ID,
 	)
 }

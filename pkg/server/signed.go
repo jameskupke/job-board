@@ -1,13 +1,16 @@
-package main
+package server
 
 import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
 	"net/url"
+
+	"github.com/devict/job-board/pkg/config"
+	"github.com/devict/job-board/pkg/data"
 )
 
-func signatureForJob(job Job, secret string) string {
+func signatureForJob(job data.Job, secret string) string {
 	input := fmt.Sprintf(
 		"%s:%s:%s:%s",
 		job.ID,
@@ -22,11 +25,11 @@ func signatureForJob(job Job, secret string) string {
 	return string(base64.URLEncoding.EncodeToString(hash.Sum(nil)))
 }
 
-func signedJobRoute(job Job, config Config) string {
+func signedJobRoute(job data.Job, c config.Config) string {
 	return fmt.Sprintf(
 		"%s/jobs/%s/edit?token=%s",
-		config.URL,
+		c.URL,
 		job.ID,
-		url.QueryEscape(signatureForJob(job, config.AppSecret)),
+		url.QueryEscape(signatureForJob(job, c.AppSecret)),
 	)
 }

@@ -1,24 +1,27 @@
-package main
+package services
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/devict/job-board/pkg/config"
+	"github.com/devict/job-board/pkg/data"
 )
 
 type SlackMessage struct {
 	Text string `json:"text"`
 }
 
-func postToSlack(job Job, config Config) error {
-	message := slackMessageFromJob(job, config)
+func PostToSlack(job data.Job, c config.Config) error {
+	message := slackMessageFromJob(job, c)
 	messageStr, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("failed to marshal slack message: %w", err)
 	}
 
-	_, err = http.Post(config.SlackHook, "application/json", bytes.NewReader(messageStr))
+	_, err = http.Post(c.SlackHook, "application/json", bytes.NewReader(messageStr))
 	if err != nil {
 		return fmt.Errorf("failed to post to slack: %w", err)
 	}
@@ -26,10 +29,10 @@ func postToSlack(job Job, config Config) error {
 	return nil
 }
 
-func slackMessageFromJob(job Job, config Config) SlackMessage {
+func slackMessageFromJob(job data.Job, c config.Config) SlackMessage {
 	text := fmt.Sprintf(
 		"A new job was posted!\n> *<%s/jobs/%s|%s @ %s>*",
-		config.URL,
+		c.URL,
 		job.ID,
 		job.Position,
 		job.Organization,

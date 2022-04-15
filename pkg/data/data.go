@@ -1,4 +1,4 @@
-package main
+package data
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ type Job struct {
 	PublishedAt  time.Time      `db:"published_at"`
 }
 
-func (job *Job) update(newParams NewJob) {
+func (job *Job) Update(newParams NewJob) {
 	job.Position = newParams.Position
 	job.Organization = newParams.Organization
 
@@ -59,14 +59,14 @@ func (job *Job) RenderDescription() (string, error) {
 	return b.String(), nil
 }
 
-func (job *Job) save(db *sqlx.DB) (sql.Result, error) {
+func (job *Job) Save(db *sqlx.DB) (sql.Result, error) {
 	return db.Exec(
 		"UPDATE jobs SET position = $1, organization = $2, url = $3, description = $4 WHERE id = $5",
 		job.Position, job.Organization, job.Url, job.Description, job.ID,
 	)
 }
 
-func getAllJobs(db *sqlx.DB) ([]Job, error) {
+func GetAllJobs(db *sqlx.DB) ([]Job, error) {
 	var jobs []Job
 
 	err := db.Select(&jobs, "SELECT * FROM jobs ORDER BY published_at DESC")
@@ -77,7 +77,7 @@ func getAllJobs(db *sqlx.DB) ([]Job, error) {
 	return jobs, nil
 }
 
-func getJob(id string, db *sqlx.DB) (Job, error) {
+func GetJob(id string, db *sqlx.DB) (Job, error) {
 	var job Job
 
 	err := db.Get(&job, "SELECT * FROM jobs WHERE id = $1", id)
@@ -96,7 +96,7 @@ type NewJob struct {
 	Email        string `form:"email"`
 }
 
-func (newJob *NewJob) validate(update bool) map[string]string {
+func (newJob *NewJob) Validate(update bool) map[string]string {
 	errs := make(map[string]string)
 
 	if newJob.Position == "" {
@@ -131,7 +131,7 @@ func (newJob *NewJob) validate(update bool) map[string]string {
 	return errs
 }
 
-func (newJob *NewJob) saveToDB(db *sqlx.DB) (Job, error) {
+func (newJob *NewJob) SaveToDB(db *sqlx.DB) (Job, error) {
 	query := `INSERT INTO jobs
     (position, organization, url, description, email)
     VALUES ($1, $2, $3, $4, $5)

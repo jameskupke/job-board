@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -6,6 +6,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/devict/job-board/pkg/config"
+	"github.com/devict/job-board/pkg/data"
+	"github.com/devict/job-board/pkg/services"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -13,11 +16,11 @@ import (
 
 type Controller struct {
 	DB     *sqlx.DB
-	Config Config
+	Config config.Config
 }
 
 func (ctrl *Controller) Index(ctx *gin.Context) {
-	jobs, err := getAllJobs(ctrl.DB)
+	jobs, err := data.GetAllJobs(ctrl.DB)
 	if err != nil {
 		log.Println(fmt.Errorf("Index failed to getAllJobs: %w", err))
 		ctx.AbortWithStatus(http.StatusInternalServerError)
@@ -48,7 +51,7 @@ func (ctrl *Controller) EditJob(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 
 	id := ctx.Param("id")
-	job, err := getJob(id, ctrl.DB)
+	job, err := data.GetJob(id, ctrl.DB)
 	if err != nil {
 		log.Println(fmt.Errorf("failed to getJob: %w", err))
 		ctx.AbortWithStatus(http.StatusInternalServerError)
@@ -68,7 +71,7 @@ func (ctrl *Controller) EditJob(ctx *gin.Context) {
 }
 
 func (ctrl *Controller) CreateJob(ctx *gin.Context) {
-	var newJobInput NewJob
+	var newJobInput data.NewJob
 	if err := ctx.Bind(&newJobInput); err != nil {
 		log.Println(fmt.Errorf("failed to ctx.Bind: %w", err))
 		ctx.AbortWithStatus(http.StatusInternalServerError)
@@ -82,7 +85,7 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 		}
 	}()
 
-	if errs := newJobInput.validate(false); len(errs) != 0 {
+	if errs := newJobInput.Validate(false); len(errs) != 0 {
 		for k, v := range errs {
 			session.AddFlash(v, fmt.Sprintf("%s_err", k))
 		}
@@ -91,7 +94,7 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 		return
 	}
 
-	job, err := newJobInput.saveToDB(ctrl.DB)
+	job, err := newJobInput.SaveToDB(ctrl.DB)
 	if err != nil {
 		log.Println(fmt.Errorf("failed to save job to db: %w", err))
 		session.AddFlash("Error creating job")
@@ -105,7 +108,7 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 			"Your job has been created!\n\n<a href=\"%s\">Use this link to edit the job posting</a>",
 			signedJobRoute(job, ctrl.Config),
 		)
-		err = sendEmail(newJobInput.Email, "Job Created!", message, ctrl.Config.Email)
+		err = services.SendEmail(newJobInput.Email, "Job Created!", message, ctrl.Config.Email)
 		if err != nil {
 			log.Println(fmt.Errorf("failed to sendEmail: %w", err))
 			// continuing...
@@ -113,14 +116,14 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 	}
 
 	if ctrl.Config.SlackHook != "" {
-		if err = postToSlack(job, ctrl.Config); err != nil {
+		if err = services.PostToSlack(job, ctrl.Config); err != nil {
 			log.Println(fmt.Errorf("failed to postToSlack: %w", err))
 			// continuing...
 		}
 	}
 
 	if ctrl.Config.Twitter.AccessToken != "" {
-		if err = postToTwitter(job, ctrl.Config); err != nil {
+		if err = services.PostToTwitter(job, ctrl.Config); err != nil {
 			log.Println(fmt.Errorf("failed to postToTwitter: %w", err))
 			// continuing...
 		}
@@ -133,7 +136,7 @@ func (ctrl *Controller) CreateJob(ctx *gin.Context) {
 func (ctrl *Controller) UpdateJob(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	var newJobInput NewJob
+	var newJobInput data.NewJob
 	if err := ctx.Bind(&newJobInput); err != nil {
 		log.Println(fmt.Errorf("failed to ctx.Bind: %w", err))
 		ctx.AbortWithStatus(http.StatusInternalServerError)
@@ -147,7 +150,7 @@ func (ctrl *Controller) UpdateJob(ctx *gin.Context) {
 		}
 	}()
 
-	if errs := newJobInput.validate(true); len(errs) != 0 {
+	if errs := newJobInput.Validate(true); len(errs) != 0 {
 		for k, v := range errs {
 			session.AddFlash(v, fmt.Sprintf("%s_err", k))
 		}
@@ -157,15 +160,15 @@ func (ctrl *Controller) UpdateJob(ctx *gin.Context) {
 		return
 	}
 
-	job, err := getJob(id, ctrl.DB)
+	job, err := data.GetJob(id, ctrl.DB)
 	if err != nil {
 		log.Println(fmt.Errorf("failed to getJob: %w", err))
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	job.update(newJobInput)
-	if _, err = job.save(ctrl.DB); err != nil {
+	job.Update(newJobInput)
+	if _, err = job.Save(ctrl.DB); err != nil {
 		log.Println(fmt.Errorf("failed to job.save: %w", err))
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
@@ -177,7 +180,7 @@ func (ctrl *Controller) UpdateJob(ctx *gin.Context) {
 
 func (ctrl *Controller) ViewJob(ctx *gin.Context) {
 	id := ctx.Param("id")
-	job, err := getJob(id, ctrl.DB)
+	job, err := data.GetJob(id, ctrl.DB)
 	if err != nil {
 		log.Println(fmt.Errorf("failed to getJob: %w", err))
 		ctx.AbortWithStatus(http.StatusInternalServerError)

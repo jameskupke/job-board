@@ -1,12 +1,14 @@
-package main
+package services
 
 import (
 	"fmt"
 	"net/smtp"
 	"strings"
+
+	"github.com/devict/job-board/pkg/config"
 )
 
-func sendEmail(recipient, subject, body string, conf EmailConfig) error {
+func SendEmail(recipient, subject, body string, conf config.EmailConfig) error {
 	msg := fmt.Sprintf(
 		"From: devICT Job Board <%s>\nTo: %s\nSubject: %s\nContent-Type: text/html; charset=UTF-8\n\n%s",
 		conf.FromEmail,
