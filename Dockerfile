@@ -1,9 +1,9 @@
-FROM golang:1.17 as builder
+FROM golang:latest as builder
 RUN mkdir /app
 WORKDIR /app
 COPY . .
 RUN go mod download
-RUN GOOS=linux CGO_ENABLED=0 go build -a -o /app/job-board cmd/server
+RUN GOOS=linux CGO_ENABLED=0 go build -a -o /app/job-board ./cmd/server
 
 FROM alpine:latest
 WORKDIR /app
