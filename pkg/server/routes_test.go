@@ -44,7 +44,6 @@ func TestIndex(t *testing.T) {
 }
 
 func TestNewJob(t *testing.T) {
-	t.FailNow() // TODO: remove, just checking that the checks action failure will cancel deploy
 	s, _, _, _ := makeServer(t)
 	defer s.Close()
 
