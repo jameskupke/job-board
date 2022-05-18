@@ -10,7 +10,7 @@ import (
 	"github.com/devict/job-board/pkg/data"
 )
 
-func signatureForJob(job data.Job, secret string) string {
+func SignatureForJob(job data.Job, secret string) string {
 	input := fmt.Sprintf(
 		"%s:%s:%s:%s",
 		job.ID,
@@ -25,11 +25,11 @@ func signatureForJob(job data.Job, secret string) string {
 	return string(base64.URLEncoding.EncodeToString(hash.Sum(nil)))
 }
 
-func signedJobRoute(job data.Job, c config.Config) string {
+func SignedJobRoute(job data.Job, c *config.Config) string {
 	return fmt.Sprintf(
 		"%s/jobs/%s/edit?token=%s",
 		c.URL,
 		job.ID,
-		url.QueryEscape(signatureForJob(job, c.AppSecret)),
+		url.QueryEscape(SignatureForJob(job, c.AppSecret)),
 	)
 }

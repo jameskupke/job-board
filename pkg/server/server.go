@@ -1,13 +1,16 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"path"
 
 	"github.com/devict/job-board/pkg/config"
 	"github.com/devict/job-board/pkg/data"
+	"github.com/devict/job-board/pkg/services"
 	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -15,8 +18,17 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func NewServer(c config.Config, db *sqlx.DB) (http.Server, error) {
-	gin.SetMode(c.Env)
+type ServerConfig struct {
+	Config         *config.Config
+	DB             *sql.DB
+	EmailService   services.IEmailService
+	TwitterService services.ITwitterService
+	SlackService   services.ISlackService
+	TemplatePath   string
+}
+
+func NewServer(c *ServerConfig) (http.Server, error) {
+	gin.SetMode(c.Config.Env)
 	gin.DefaultWriter = log.Writer()
 
 	router := gin.Default()
@@ -28,49 +40,58 @@ func NewServer(c config.Config, db *sqlx.DB) (http.Server, error) {
 	sessionOpts := sessions.Options{
 		Path:     "/",
 		MaxAge:   24 * 60, // 1 day
-		Secure:   c.Env != "debug",
+		Secure:   c.Config.Env != "debug",
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	}
 
-	sessionStore := cookie.NewStore([]byte(c.AppSecret))
+	sessionStore := cookie.NewStore([]byte(c.Config.AppSecret))
 	sessionStore.Options(sessionOpts)
 	router.Use(sessions.Sessions("mysession", sessionStore))
 
 	router.Static("/assets", "assets")
-	router.HTMLRender = renderer()
+	router.HTMLRender = renderer(c.TemplatePath)
 
-	ctrl := &Controller{DB: db, Config: c}
+	sqlxDb := sqlx.NewDb(c.DB, "postgres")
+
+	ctrl := &Controller{
+		DB:             sqlxDb,
+		Config:         c.Config,
+		EmailService:   c.EmailService,
+		SlackService:   c.SlackService,
+		TwitterService: c.TwitterService,
+	}
 	router.GET("/", ctrl.Index)
 	router.GET("/new", ctrl.NewJob)
 	router.POST("/jobs", ctrl.CreateJob)
 	router.GET("/jobs/:id", ctrl.ViewJob)
 
 	authorized := router.Group("/")
-	authorized.Use(requireAuth(db, c.AppSecret))
+	authorized.Use(requireAuth(sqlxDb, c.Config.AppSecret))
 	{
 		authorized.GET("/jobs/:id/edit", ctrl.EditJob)
 		authorized.POST("/jobs/:id", ctrl.UpdateJob)
 	}
 
 	return http.Server{
-		Addr:    c.Port,
+		Addr:    c.Config.Port,
 		Handler: router,
 	}, nil
-
 }
 
-func renderer() multitemplate.Renderer {
+func renderer(templatePath string) multitemplate.Renderer {
 	funcMap := template.FuncMap{
 		"formatAsDate":          formatAsDate,
 		"formatAsRfc3339String": formatAsRfc3339String,
 	}
 
+	basePath := path.Join(templatePath, "base.html")
+
 	r := multitemplate.NewRenderer()
-	r.AddFromFilesFuncs("index", funcMap, "./templates/base.html", "./templates/index.html")
-	r.AddFromFilesFuncs("new", funcMap, "./templates/base.html", "./templates/new.html")
-	r.AddFromFilesFuncs("edit", funcMap, "./templates/base.html", "./templates/edit.html")
-	r.AddFromFilesFuncs("view", funcMap, "./templates/base.html", "./templates/view.html")
+	r.AddFromFilesFuncs("index", funcMap, basePath, path.Join(templatePath, "index.html"))
+	r.AddFromFilesFuncs("new", funcMap, basePath, path.Join(templatePath, "new.html"))
+	r.AddFromFilesFuncs("edit", funcMap, basePath, path.Join(templatePath, "edit.html"))
+	r.AddFromFilesFuncs("view", funcMap, basePath, path.Join(templatePath, "view.html"))
 
 	return r
 }
@@ -86,7 +107,7 @@ func requireAuth(db *sqlx.DB, secret string) func(*gin.Context) {
 		}
 
 		token := ctx.Query("token")
-		expected := signatureForJob(job, secret)
+		expected := SignatureForJob(job, secret)
 
 		if token != expected {
 			ctx.AbortWithStatus(403)

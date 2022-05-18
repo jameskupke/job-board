@@ -9,13 +9,21 @@ import (
 	"github.com/dghubble/oauth1"
 )
 
-func PostToTwitter(job data.Job, c config.Config) error {
-	tweetStr := tweetFromJob(job, c)
+type ITwitterService interface {
+	PostToTwitter(data.Job) error
+}
 
-	oa := oauth1.NewConfig(c.Twitter.APIKey, c.Twitter.APISecretKey)
+type TwitterService struct {
+	Conf *config.Config
+}
+
+func (svc *TwitterService) PostToTwitter(job data.Job) error {
+	tweetStr := tweetFromJob(job, svc.Conf)
+
+	oa := oauth1.NewConfig(svc.Conf.Twitter.APIKey, svc.Conf.Twitter.APISecretKey)
 	token := oauth1.NewToken(
-		c.Twitter.AccessToken,
-		c.Twitter.AccessTokenSecret,
+		svc.Conf.Twitter.AccessToken,
+		svc.Conf.Twitter.AccessTokenSecret,
 	)
 	httpClient := oa.Client(oauth1.NoContext, token)
 
@@ -30,7 +38,7 @@ func PostToTwitter(job data.Job, c config.Config) error {
 	return nil
 }
 
-func tweetFromJob(job data.Job, c config.Config) string {
+func tweetFromJob(job data.Job, c *config.Config) string {
 	return fmt.Sprintf(
 		"A job was posted! -- %s at %s\n\nMore info at %s/jobs/%s",
 		job.Position,

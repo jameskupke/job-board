@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -13,10 +14,10 @@ import (
 	"github.com/devict/job-board/pkg/config"
 	"github.com/devict/job-board/pkg/data"
 	"github.com/devict/job-board/pkg/server"
+	"github.com/devict/job-board/pkg/services"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
@@ -43,7 +44,7 @@ func run() error {
 	}
 
 	// get our database connection
-	db, err := sqlx.Open("postgres", c.DatabaseURL)
+	db, err := sql.Open("postgres", c.DatabaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to sqlx.Open: %w", err)
 	}
@@ -77,7 +78,25 @@ func run() error {
 		}
 	}()
 
-	server, err := server.NewServer(c, db)
+	conf := &server.ServerConfig{
+		Config:       c,
+		DB:           db,
+		TemplatePath: "./templates",
+	}
+
+	if c.Email.SMTPHost != "" {
+		conf.EmailService = &services.EmailService{Conf: c.Email}
+	}
+
+	if c.SlackHook != "" {
+		conf.SlackService = &services.SlackService{Conf: c}
+	}
+
+	if c.Twitter.APIKey != "" {
+		conf.TwitterService = &services.TwitterService{Conf: c}
+	}
+
+	server, err := server.NewServer(conf)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
 	}
