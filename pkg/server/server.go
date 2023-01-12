@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"time"
 
 	"github.com/devict/job-board/pkg/config"
 	"github.com/devict/job-board/pkg/data"
@@ -37,6 +38,11 @@ func NewServer(c *ServerConfig) (http.Server, error) {
 
 	if err := router.SetTrustedProxies(nil); err != nil {
 		return http.Server{}, fmt.Errorf("failed to SetTrustedProxies: %w", err)
+	}
+
+	legacyDate, err := time.Parse("2006-01-02", c.Config.LegacyCutoff)
+	if err != nil {
+		return http.Server{}, fmt.Errorf("failed to parse LegacyCutoff: %w", err)
 	}
 
 	sessionOpts := sessions.Options{
@@ -70,7 +76,7 @@ func NewServer(c *ServerConfig) (http.Server, error) {
 	router.GET("/jobs/:id", ctrl.ViewJob)
 
 	authorized := router.Group("/")
-	authorized.Use(requireTokenAuth(sqlxDb, c.Config.AppSecret, JobRoute))
+	authorized.Use(requireTokenAuth(sqlxDb, c.Config.AppSecret, JobRoute, legacyDate))
 	{
 		authorized.GET("/jobs/:id/edit", ctrl.EditJob)
 		authorized.POST("/jobs/:id", ctrl.UpdateJob)
@@ -100,9 +106,25 @@ func renderer(templatePath string) multitemplate.Renderer {
 	return r
 }
 
-func requireTokenAuth(db *sqlx.DB, secret, authType string) func(*gin.Context) {
+// slowEquals compares two byte sequences in constant time to avoid side channel attacks
+func slowEquals(value1 []byte, value2 []byte) bool {
+	isValid := true
+
+	if len(value1) != len(value2) {
+		return false
+	}
+
+	for i := 0; i < len(value1); i++ {
+		isValid = isValid && value1[i] == value2[i]
+	}
+
+	return isValid
+}
+
+func requireTokenAuth(db *sqlx.DB, secret, authType string, legacyCutoff time.Time) func(*gin.Context) {
 	return func(ctx *gin.Context) {
-		var expected string
+		var expected []byte
+		var legacyExpected []byte
 
 		switch authType {
 		case JobRoute:
@@ -118,19 +140,25 @@ func requireTokenAuth(db *sqlx.DB, secret, authType string) func(*gin.Context) {
 				ctx.AbortWithStatus(http.StatusNotFound)
 				return
 			}
-			expected = job.AuthSignature(secret)
+			expected = []byte(job.AuthSignature(secret))
+
+			// TODO: remove after cutoff date
+			legacyExpected = []byte(job.LegacyAuthSignature(secret))
 		default:
 			log.Println("requireTokenAuth failed, unexpected authType:", authType)
 			ctx.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 
-		token := ctx.Query("token")
+		token := []byte(ctx.Query("token"))
 
 		// This is the same if it is a job or a user
-		if token != expected {
-			ctx.AbortWithStatus(403)
-			return
+		if !slowEquals(expected, token) {
+			// TODO: remove after cutoff date
+			if legacyCutoff.Before(time.Now()) || !slowEquals(legacyExpected, token) {
+				ctx.AbortWithStatus(403)
+				return
+			}
 		}
 	}
 }
