@@ -3,7 +3,6 @@ package data
 import (
 	"bytes"
 	"crypto/hmac"
-	"crypto/sha1"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
@@ -88,20 +87,6 @@ func (job *Job) AuthSignature(secret string) string {
 	)
 
 	hash := hmac.New(sha256.New, []byte(secret)).Sum([]byte(input))
-
-	return base64.URLEncoding.EncodeToString(hash[:])
-}
-
-func (job *Job) LegacyAuthSignature(secret string) string {
-	input := fmt.Sprintf(
-		"%s:%s:%s:%s",
-		job.ID,
-		job.Email,
-		job.PublishedAt.String(),
-		secret,
-	)
-
-	hash := sha1.Sum([]byte(input))
 
 	return base64.URLEncoding.EncodeToString(hash[:])
 }

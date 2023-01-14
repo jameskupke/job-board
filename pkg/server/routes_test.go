@@ -449,7 +449,7 @@ func makeServer(t *testing.T) (*httptest.Server, *mockService, sqlmock.Sqlmock, 
 	db, dbmock, err := sqlmock.New()
 	assert.NoError(t, err)
 
-	conf := &config.Config{AppSecret: "sup", Env: "debug", LegacyCutoff: "2023-01-31"}
+	conf := &config.Config{AppSecret: "sup", Env: "debug"}
 	svc := &mockService{}
 
 	s, err := server.NewServer(
