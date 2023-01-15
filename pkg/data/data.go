@@ -86,9 +86,10 @@ func (job *Job) AuthSignature(secret string) string {
 		job.PublishedAt.String(),
 	)
 
-	hash := hmac.New(sha256.New, []byte(secret)).Sum([]byte(input))
+	hash := hmac.New(sha256.New, []byte(secret))
+	hash.Write([]byte(input))
 
-	return base64.URLEncoding.EncodeToString(hash[:])
+	return base64.URLEncoding.EncodeToString(hash.Sum(nil))
 }
 
 func GetAllJobs(db *sqlx.DB) ([]Job, error) {
