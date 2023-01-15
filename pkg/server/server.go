@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"database/sql"
 	"fmt"
 	"html/template"
@@ -102,7 +103,7 @@ func renderer(templatePath string) multitemplate.Renderer {
 
 func requireTokenAuth(db *sqlx.DB, secret, authType string) func(*gin.Context) {
 	return func(ctx *gin.Context) {
-		var expected string
+		var expected []byte
 
 		switch authType {
 		case JobRoute:
@@ -118,17 +119,17 @@ func requireTokenAuth(db *sqlx.DB, secret, authType string) func(*gin.Context) {
 				ctx.AbortWithStatus(http.StatusNotFound)
 				return
 			}
-			expected = job.AuthSignature(secret)
+			expected = []byte(job.AuthSignature(secret))
 		default:
 			log.Println("requireTokenAuth failed, unexpected authType:", authType)
 			ctx.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 
-		token := ctx.Query("token")
+		token := []byte(ctx.Query("token"))
 
 		// This is the same if it is a job or a user
-		if token != expected {
+		if subtle.ConstantTimeCompare(expected, token) == 0 {
 			ctx.AbortWithStatus(403)
 			return
 		}

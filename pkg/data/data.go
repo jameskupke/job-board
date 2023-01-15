@@ -2,7 +2,8 @@ package data
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/hmac"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
 	"errors"
@@ -79,16 +80,16 @@ func (job *Job) Save(db *sqlx.DB) (sql.Result, error) {
 
 func (job *Job) AuthSignature(secret string) string {
 	input := fmt.Sprintf(
-		"%s:%s:%s:%s",
+		"%s:%s:%s",
 		job.ID,
 		job.Email,
 		job.PublishedAt.String(),
-		secret,
 	)
 
-	hash := sha1.Sum([]byte(input))
+	hash := hmac.New(sha256.New, []byte(secret))
+	hash.Write([]byte(input))
 
-	return base64.URLEncoding.EncodeToString(hash[:])
+	return base64.URLEncoding.EncodeToString(hash.Sum(nil))
 }
 
 func GetAllJobs(db *sqlx.DB) ([]Job, error) {
