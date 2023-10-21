@@ -65,7 +65,7 @@ func (job *Job) RenderDescription() (string, error) {
 
 	var b bytes.Buffer
 	if err := markdown.Convert([]byte(job.Description.String), &b); err != nil {
-		return "", fmt.Errorf("failed to convert job descroption to markdown (job id: %s): %w", job.ID, err)
+		return "", fmt.Errorf("failed to convert job description to markdown (job id: %s): %w", job.ID, err)
 	}
 
 	return b.String(), nil
